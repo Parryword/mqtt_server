@@ -52,20 +52,10 @@ bool notSent = true;
 
 void setup() {
   Serial.begin(115200);
-  Serial.print("Setting AP (Access Point)…");
-
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(soft_ap_ssid, soft_ap_password, channel, ssid_hidden, max_connection, ftm_responder);
-
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
-
-  server.begin();
 
   // Connect to the WiFi
   WiFi.begin(wifi_network_ssid);
-  Serial.println("Connecting");
+  Serial.println("Connecting to WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -88,10 +78,14 @@ void setup() {
   }
 
   Serial.println(t);
-  SerialBT.begin("ESP32test");  //Bluetooth device name
+  SerialBT.begin("ESP32 - Efe");  //Bluetooth device name
 }
 
 void loop() {
+  if (Serial.available()) {
+    SerialBT.write(Serial.read());
+  }
+  
   if (SerialBT.available()) {
     bluetoothMessage = SerialBT.readString();
     Serial.println(bluetoothMessage);
@@ -102,7 +96,7 @@ void loop() {
     executeCommand(bluetoothMessage);
 
     Serial.println("Replying to client.\n\n");
-    String a = "Message received.";
+    String a = "Message received.\n";
     uint8_t buf[a.length()];
     memcpy(buf, a.c_str(), a.length());
     SerialBT.write(buf, a.length());
@@ -131,6 +125,28 @@ String executeCommand(String command) {
 
   if (start_c != -1) {
     Serial.println("Executing CRED.");
+
+    String ssid;
+    String password;
+
+    String param = "-m ";
+    int start = s.indexOf(param);
+    start += param.length(); // Skip the command itself
+    int end = s.indexOf("\r\n", start);
+    ssid = s.substring(start, end);
+    
+    Serial.print("The value of the command is: ");
+    Serial.println(ssid);
+
+    Serial.print("Setting AP (Access Point)…");
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.softAP(ssid, soft_ap_password, channel, ssid_hidden, max_connection, ftm_responder);
+
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
+
+    server.begin();
   }
   /*
     start += query.length(); // Skip the query itself
