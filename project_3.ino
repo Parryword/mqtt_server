@@ -130,14 +130,24 @@ String executeCommand(String command) {
     String ssid;
     String password;
 
-    String param = "-m ";
-    int start = s.indexOf(param);
+    String param_s = "-s ";
+    String param_p = "-p ";
+
+    int start = s.indexOf(param_s);
+    start += param.length(); // Skip the command itself
+    int end = s.indexOf(param_p, start);
+    ssid = s.substring(start, end);
+    
+    Serial.print("The ssid of the command is: ");
+    Serial.println(ssid);
+
+    int start = s.indexOf(param_p);
     start += param.length(); // Skip the command itself
     int end = s.indexOf("\r\n", start);
     ssid = s.substring(start, end);
     
-    Serial.print("The value of the command is: ");
-    Serial.println(ssid);
+    Serial.print("The password of the command is: ");
+    Serial.println(password);
 
     Serial.print("Setting AP (Access Point)…");
     WiFi.mode(WIFI_AP_STA);
