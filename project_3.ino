@@ -96,6 +96,7 @@ void loop() {
     executeCommand(bluetoothMessage);
 
     Serial.println("Replying to client.\n\n");
+    // DO NOT DELETE '\n' FROM THE END OF THE MESSAGE, OTHERWISE IT WILL NOT TRANSMIT
     String a = "Message received.\n";
     uint8_t buf[a.length()];
     memcpy(buf, a.c_str(), a.length());
