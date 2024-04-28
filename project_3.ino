@@ -1,9 +1,3 @@
-//This example code is in the Public Domain (or CC0 licensed, at your option.)
-//By Evandro Copercini - 2018
-//
-//This example creates a bridge between Serial and Classical Bluetooth (SPP)
-//and also demonstrate that SerialBT have the same functionalities of a normal Serial
-
 #include "BluetoothSerial.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -49,6 +43,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 String bluetoothMessage = "";
 bool notSent = true;
+bool accesspointEnabled = false;
 
 void setup() {
   Serial.begin(115200);
@@ -64,7 +59,10 @@ void setup() {
   Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
 
-  //weatherRequest();
+  SerialBT.begin("ESP32 - Efe");  //Bluetooth device name
+
+  // INITIAL TEST
+  weatherRequest();
 
   dht.begin();
 
@@ -78,7 +76,6 @@ void setup() {
   }
 
   Serial.println(t);
-  SerialBT.begin("ESP32 - Efe");  //Bluetooth device name
 }
 
 void loop() {
@@ -89,6 +86,7 @@ void loop() {
   if (SerialBT.available()) {
     bluetoothMessage = SerialBT.readString();
     Serial.println(bluetoothMessage);
+    return;
     // executeCommand(String());
   }
 
@@ -107,6 +105,7 @@ void loop() {
   delay(20);
 }
 
+// BLUETOOTH COMMANDS
 void executeCommand(String command) {
   String s = command;
   String fetch = "FETCH";
@@ -128,9 +127,12 @@ void executeCommand(String command) {
       Serial.println("Failed to read from sensor");
       return;
     }
+
+    buildQuery();
+    weatherRequest();
     clientData.roomTemp = t;
 
-    String val = "-s " + String(clientData.roomTemp) + "\n";
+    String val = String(clientData.temp) + " " + String(clientData.humidity) + " " + String(clientData.windSpeed) + " " + String(clientData.roomTemp) + "\n";
     uint8_t buf[val.length()];
     memcpy(buf, val.c_str(), val.length());
     SerialBT.write(buf, val.length());
@@ -170,5 +172,55 @@ void executeCommand(String command) {
     Serial.println(IP);
 
     server.begin();
+
+    accesspointEnabled = true;
+  }
+}
+
+// API REQUESTS
+void buildQuery() {
+  query = "https://api.openweathermap.org/data/2.5/weather?q=" + selectedCity + "&appid=660aad8d134eb678f8445709216b8361";
+}
+
+void weatherRequest() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.setUserAgent("ESP32 - IEU");
+
+    // String serverPath = serverName1;
+    String serverPath = query;
+
+    // Your Domain name with URL path or IP address with path
+    http.begin(serverPath.c_str());
+    Serial.println(serverPath.c_str());
+
+    // Send HTTP GET request
+    int httpResponseCode = http.GET();
+
+    if (httpResponseCode > 0) {
+      Serial.print("HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      String payload = http.getString();
+      Serial.println(payload);
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, payload);
+      if (error) {
+        Serial.println("deserializeJson() failed");
+        return;
+      }
+      clientData.temp = doc["main"]["temp"];
+      clientData.humidity = doc["main"]["humidity"];
+      clientData.windSpeed = doc["wind"]["speed"];
+      Serial.println(clientData.temp);
+      Serial.println(clientData.humidity);
+      Serial.println(clientData.windSpeed);
+    } else {
+      Serial.print("Error code: ");
+      Serial.println(httpResponseCode);
+    }
+    // Free resources
+    http.end();
+  } else {
+    Serial.println("WiFi Disconnected");
   }
 }
