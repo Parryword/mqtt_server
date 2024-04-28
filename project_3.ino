@@ -134,17 +134,17 @@ String executeCommand(String command) {
     String param_p = "-p ";
 
     int start = s.indexOf(param_s);
-    start += param.length(); // Skip the command itself
+    start += param_s.length(); // Skip the command itself
     int end = s.indexOf(param_p, start);
     ssid = s.substring(start, end);
     
     Serial.print("The ssid of the command is: ");
     Serial.println(ssid);
 
-    int start = s.indexOf(param_p);
-    start += param.length(); // Skip the command itself
-    int end = s.indexOf("\r\n", start);
-    ssid = s.substring(start, end);
+    start = s.indexOf(param_p);
+    start += param_p.length(); // Skip the command itself
+    end = s.indexOf("\r\n", start);
+    password = s.substring(start, end);
     
     Serial.print("The password of the command is: ");
     Serial.println(password);
