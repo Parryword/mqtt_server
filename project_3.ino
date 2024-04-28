@@ -85,7 +85,7 @@ void loop() {
   if (Serial.available()) {
     SerialBT.write(Serial.read());
   }
-  
+
   if (SerialBT.available()) {
     bluetoothMessage = SerialBT.readString();
     Serial.println(bluetoothMessage);
@@ -103,11 +103,11 @@ void loop() {
     SerialBT.write(buf, a.length());
     bluetoothMessage = "";
   }
-    
+
   delay(20);
 }
 
-String executeCommand(String command) {
+void executeCommand(String command) {
   String s = command;
   String fetch = "FETCH";
   String cred = "CRED";
@@ -117,11 +117,23 @@ String executeCommand(String command) {
 
   if (start_f == -1 && start_c == -1) {
     Serial.println("Invalid command.");
-    return "";
+    return;
   }
 
   if (start_f != -1) {
     Serial.println("Executing FETCH.");
+
+    float t = dht.readTemperature();
+    if (isnan(t)) {
+      Serial.println("Failed to read from sensor");
+      return;
+    }
+    clientData.roomTemp = t;
+
+    String val = "-s " + String(clientData.roomTemp) + "\n";
+    uint8_t buf[val.length()];
+    memcpy(buf, val.c_str(), val.length());
+    SerialBT.write(buf, val.length());
   }
 
   if (start_c != -1) {
@@ -134,18 +146,18 @@ String executeCommand(String command) {
     String param_p = "-p ";
 
     int start = s.indexOf(param_s);
-    start += param_s.length(); // Skip the command itself
+    start += param_s.length();  // Skip the command itself
     int end = s.indexOf(param_p, start);
     ssid = s.substring(start, end);
-    
+
     Serial.print("The ssid of the command is: ");
     Serial.println(ssid);
 
     start = s.indexOf(param_p);
-    start += param_p.length(); // Skip the command itself
+    start += param_p.length();  // Skip the command itself
     end = s.indexOf("\r\n", start);
     password = s.substring(start, end);
-    
+
     Serial.print("The password of the command is: ");
     Serial.println(password);
 
@@ -159,12 +171,4 @@ String executeCommand(String command) {
 
     server.begin();
   }
-  /*
-    start += query.length(); // Skip the query itself
-    int end = s.indexOf(" HTTP/1.1", start);
-    String value = s.substring(start, end);
-    
-    Serial.print("The value of the query is: ");
-    Serial.println(value);*/
-  return "";
 }
